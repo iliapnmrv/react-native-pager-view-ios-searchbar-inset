@@ -1,97 +1,59 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# PagerView native search bar reproduction
 
-# Getting Started
+Minimal iOS reproduction for a layout difference between a plain `FlatList`
+and the same list rendered inside `react-native-pager-view` while using a
+native-stack search bar.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Environment
 
-## Step 1: Start Metro
+- React Native 0.87.1 (New Architecture)
+- React 19.2.3
+- `@react-navigation/native` 7.3.18
+- `@react-navigation/native-stack` 7.18.10
+- `react-native-screens` 4.27.0
+- `react-native-pager-view` 9.0.4
+- `react-native-safe-area-context` 5.9.1
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
-
-To start the Metro dev server, run the following command from the root of your React Native project:
-
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
+## Run
 
 ```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
+npm install
 bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+bundle exec pod install --project-directory=ios
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+Use an iPhone simulator with a non-zero safe area, such as iPhone 16 Pro or
+iPhone 17 Pro.
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## Steps to reproduce
 
-## Step 3: Modify your app
+1. Open **Control: plain FlatList**.
+2. Verify that row 1 starts directly below the native search bar.
+3. Navigate back.
+4. Open **Repro: FlatList in PagerView**.
+5. Compare the position of row 1 and the space below the list with the control.
+6. Navigate back and repeat the push several times.
+7. Focus and cancel the search bar, then swipe between pager pages.
 
-Now that you have successfully run the app, let's make changes!
+Both screens intentionally use the same `headerSearchBarOptions`, the same
+`FlatList`, and `contentInsetAdjustmentBehavior="automatic"`. The pager screen
+only adds `PagerView` around the list. Using `automatic` is required here: with
+`never`, the first rows can be obscured by the native search bar and the test no
+longer represents the supported native-stack configuration.
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## Expected
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+The first row and bottom edge of the list have the same positions on both
+screens.
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+## Actual
 
-## Congratulations! :tada:
+With the affected iOS pager layout, the page inside `PagerView` can receive a
+different safe-area/layout adjustment. This appears as extra space between the
+search bar and row 1, a shortened page or an exposed magenta strip at the
+bottom. The plain `FlatList` is the control and does not exhibit the mismatch.
 
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+The red three-point line belongs to the first pager page. The magenta color
+belongs to the container outside `PagerView`, making a shortened pager page
+easy to see.
