@@ -34,9 +34,9 @@ const rows = Array.from({ length: 40 }, (_, index) => `Row ${index + 1}`);
 function useSearchHeader(navigation: SearchScreenProps['navigation']) {
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: 'Tickets',
+      title: 'Items',
       headerSearchBarOptions: {
-        placeholder: 'Ticket number',
+        placeholder: 'Search items',
         placement: 'stacked',
         hideWhenScrolling: false,
         hideNavigationBar: false,
@@ -52,7 +52,7 @@ const renderRow: ListRenderItem<string> = ({ item }) => (
   </View>
 );
 
-function TicketList() {
+function ItemList() {
   return (
     <FlatList
       contentInsetAdjustmentBehavior="automatic"
@@ -91,7 +91,7 @@ function PlainListScreen({ navigation }: SearchScreenProps) {
 
   return (
     <View style={styles.controlContainer}>
-      <TicketList />
+      <ItemList />
     </View>
   );
 }
@@ -102,8 +102,8 @@ function PagerListScreen({ navigation }: SearchScreenProps) {
   return (
     <View style={styles.pagerContainer}>
       <PagerView style={styles.pager} initialPage={0}>
-        <View key="tickets" style={styles.page} collapsable={false}>
-          <TicketList />
+        <View key="items" style={styles.page} collapsable={false}>
+          <ItemList />
           <View pointerEvents="none" style={styles.pageBottomMarker} />
         </View>
 
