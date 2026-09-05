@@ -1,3 +1,4 @@
+import { useHeaderHeight } from '@react-navigation/elements';
 import { NavigationContainer } from '@react-navigation/native';
 import {
   createNativeStackNavigator,
@@ -53,12 +54,17 @@ const renderRow: ListRenderItem<string> = ({ item }) => (
 );
 
 function ItemList() {
+  const headerHeight = useHeaderHeight();
+
   return (
     <FlatList
-      contentInsetAdjustmentBehavior="automatic"
+      // contentInsetAdjustmentBehavior="automatic"
       data={rows}
       keyExtractor={item => item}
       renderItem={renderRow}
+      contentContainerStyle={{
+        paddingTop: headerHeight,
+      }}
     />
   );
 }
