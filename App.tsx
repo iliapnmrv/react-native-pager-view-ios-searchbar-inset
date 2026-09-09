@@ -54,17 +54,17 @@ const renderRow: ListRenderItem<string> = ({ item }) => (
 );
 
 function ItemList() {
-  const headerHeight = useHeaderHeight();
+  // const headerHeight = useHeaderHeight();
 
   return (
     <FlatList
-      // contentInsetAdjustmentBehavior="automatic"
+      contentInsetAdjustmentBehavior="automatic"
       data={rows}
       keyExtractor={item => item}
       renderItem={renderRow}
-      contentContainerStyle={{
-        paddingTop: headerHeight,
-      }}
+      // contentContainerStyle={{
+      //   paddingTop: headerHeight,
+      // }}
     />
   );
 }

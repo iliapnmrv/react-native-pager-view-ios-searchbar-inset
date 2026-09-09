@@ -1,0 +1,88 @@
+diff --git a/node_modules/react-native-pager-view/ios/Extensions.swift b/node_modules/react-native-pager-view/ios/Extensions.swift
+index b7130d84..7207185e 100644
+--- a/node_modules/react-native-pager-view/ios/Extensions.swift
++++ b/node_modules/react-native-pager-view/ios/Extensions.swift
+@@ -40,10 +40,21 @@ class PageChildViewController: UIViewController {
+     propagateSafeArea()
+   }
+ 
+-  /// Re-applies safe area insets from a stable UIKit source, since SwiftUI's
+-  /// .ignoresSafeArea() causes embedded UIKit views to report .zero.
++  /// Re-applies the pager's safe area to child UIKit views. SwiftUI's
++  /// `.ignoresSafeArea()` and `UIHostingController(ignoreSafeArea:)` both make
++  /// this controller report `.zero`, which breaks
++  /// `contentInsetAdjustmentBehavior` on embedded scroll views.
++  ///
++  /// Do not walk to the nearest ancestor with a non-zero inset. That source is
++  /// in the ancestor's own coordinate space: an inner `_UIHostingView` often
++  /// has only the home-indicator edge (#1142), and a `UIScrollView` content
++  /// view's inset tracks scroll offset (#1099).
++  ///
++  /// `PagerViewProvider` sits in the React Native hierarchy under the screen
++  /// view controller, so its `safeAreaInsets` include a native search bar and
++  /// are zero when this pager does not overlap the unsafe region.
+   private func propagateSafeArea() {
+-    let insets = nearestNonZeroSafeAreaInsets() ?? view.window?.safeAreaInsets ?? .zero
++    let insets = targetSafeAreaInsets()
+     if abs(additionalSafeAreaInsets.top - insets.top) > 0.5
+         || abs(additionalSafeAreaInsets.left - insets.left) > 0.5
+         || abs(additionalSafeAreaInsets.bottom - insets.bottom) > 0.5
+@@ -52,12 +63,18 @@ class PageChildViewController: UIViewController {
+     }
+   }
+ 
+-  private func nearestNonZeroSafeAreaInsets() -> UIEdgeInsets? {
++  private func targetSafeAreaInsets() -> UIEdgeInsets {
++    if let pager = enclosingPagerView() {
++      return pager.safeAreaInsets
++    }
++    return view.window?.safeAreaInsets ?? .zero
++  }
++
++  private func enclosingPagerView() -> UIView? {
+     var current = view.superview
+     while let candidate = current {
+-      let insets = candidate.safeAreaInsets
+-      if insets.top > 0 || insets.left > 0 || insets.bottom > 0 || insets.right > 0 {
+-        return insets
++      if candidate is PagerViewProvider {
++        return candidate
+       }
+       current = candidate.superview
+     }
+diff --git a/node_modules/react-native-pager-view/ios/PagerViewProvider.swift b/node_modules/react-native-pager-view/ios/PagerViewProvider.swift
+index aa9c374f..82cf6f1e 100644
+--- a/node_modules/react-native-pager-view/ios/PagerViewProvider.swift
++++ b/node_modules/react-native-pager-view/ios/PagerViewProvider.swift
+@@ -117,6 +117,14 @@ import UIKit
+     }
+   }
+ 
++  override public func safeAreaInsetsDidChange() {
++    super.safeAreaInsetsDidChange()
++    // The hosting view is forced to `.zero`, so UIKit will not forward this
++    // change into `PageChildViewController`. Relayout so it can re-read our
++    // insets (native search bar, keyboard, stacked header, …).
++    hostingController?.view.setNeedsLayout()
++  }
++
+   @objc public func goTo(index: Int, animated: Bool) {
+     if animated && hasPresentedViewController() {
+       // A native-stack modal can begin its dismissal in the same JavaScript
+@@ -222,8 +230,15 @@ import UIKit
+       return
+     }
+ 
++    // The hosting view must not carry a safe area: `PagerView`'s `GeometryReader`
++    // is measured inside it, and every page is framed to that measurement, so the
++    // pages end up inset by the safe area while React Native's own layout still
++    // has them at full size. `PageChildViewController` reads *this* view's
++    // insets (the RN screen's, including a native search bar) and re-injects
++    // them; the two are independent.
+     let hostingController = UIHostingController(
+-      rootView: PagerView(props: props, delegate: delegate)
++      rootView: PagerView(props: props, delegate: delegate),
++      ignoreSafeArea: true
+     )
+     self.hostingController = hostingController
+ 
